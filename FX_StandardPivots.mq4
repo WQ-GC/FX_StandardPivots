@@ -14,11 +14,9 @@
 #property indicator_color10 DodgerBlue
 #property indicator_color11 DodgerBlue
 
-#define MAX_BUFFERS       11
-#define FX_OPEN_HOUR      0
-#define FX_OPEN_MIN       0
-#define DECIMAL_DIGITS    5
-#define YEN_DECIMAL_DIGITS        3
+#define MAX_BUFFERS           11
+#define FX_OPEN_HOUR          0
+#define FX_OPEN_MIN           0
 
 enum SymbolType{
   MajorPair,
@@ -64,8 +62,11 @@ int OnInit() {
 
   MapIndicatorBuffers();
 
+  IndicatorDigits(Digits);//set accuracy of buffers to smallest precision
+    
   for(int i = 0; i < MAX_BUFFERS; i++) {
     SetIndexStyle(i,DRAW_LINE);
+       
   }
 
   SetIndexStyle(0,DRAW_LINE,EMPTY,2);//OP
@@ -153,11 +154,7 @@ double GetOpenOP(datetime inTime) {
   inTime = StructToTime(inTimeInfo);
   int OpenBarShift = iBarShift(Symbol(),PERIOD_CURRENT, inTime);
 
-  if(getSymbol == YenPair)
-    return NormalizeDouble(iOpen(Symbol(), PERIOD_CURRENT, OpenBarShift),YEN_DECIMAL_DIGITS);
-
-  else
-    return NormalizeDouble(iOpen(Symbol(), PERIOD_CURRENT, OpenBarShift),DECIMAL_DIGITS);
+  return NormalizeDouble(iOpen(Symbol(), PERIOD_CURRENT, OpenBarShift), Digits);    
 }
 
 void GetPrevHLC(datetime inCurrTDate, FullPivotLevelsType& outPivotData) {
@@ -193,12 +190,8 @@ void GetPrevHLC(datetime inCurrTDate, FullPivotLevelsType& outPivotData) {
 }
 
 double GetPrevDay(int inPrevBar, PrevDayType inPrevDay){
-  if(inPrevDay == GET_PDC) {
-    if(getSymbol == YenPair)
-      return NormalizeDouble(iClose(Symbol(), PERIOD_CURRENT, inPrevBar), YEN_DECIMAL_DIGITS);
-    else
-      return NormalizeDouble(iClose(Symbol(), PERIOD_CURRENT, inPrevBar), DECIMAL_DIGITS);
-  }
+  if(inPrevDay == GET_PDC)
+    return NormalizeDouble(iClose(Symbol(), PERIOD_CURRENT, inPrevBar), Digits);
   
   else {
     datetime prevDayOpenTime = Time[inPrevBar];
@@ -218,20 +211,14 @@ double GetPrevDay(int inPrevBar, PrevDayType inPrevDay){
 
     if(inPrevDay == GET_PDH) {
       double maxValue = 0;
-      if(getSymbol == YenPair)
-        maxValue = NormalizeDouble(iHigh(Symbol(), PERIOD_CURRENT, tempBarShift), YEN_DECIMAL_DIGITS);
-      else
-        maxValue = NormalizeDouble(iHigh(Symbol(), PERIOD_CURRENT, tempBarShift), DECIMAL_DIGITS);
+      maxValue = NormalizeDouble(iHigh(Symbol(), PERIOD_CURRENT, tempBarShift), Digits);
 
 
       while(tempTime <= Time[inPrevBar]) {
         tempBarShift = iBarShift(Symbol(),PERIOD_CURRENT, tempTime);
 
         //Search for HIGH
-        if(getSymbol == YenPair)
-          tempValue = NormalizeDouble(iHigh(Symbol(), PERIOD_CURRENT, tempBarShift), YEN_DECIMAL_DIGITS);
-        else
-          tempValue = NormalizeDouble(iHigh(Symbol(), PERIOD_CURRENT, tempBarShift), DECIMAL_DIGITS);
+        tempValue = NormalizeDouble(iHigh(Symbol(), PERIOD_CURRENT, tempBarShift), Digits);
 
   
         if(tempValue > maxValue) {
@@ -246,20 +233,13 @@ double GetPrevDay(int inPrevBar, PrevDayType inPrevDay){
     }
     else {
       double minValue = 0;
-      if(getSymbol == YenPair)
-        minValue = NormalizeDouble(iLow(Symbol(), PERIOD_CURRENT, tempBarShift), YEN_DECIMAL_DIGITS);
-      else
-        minValue = NormalizeDouble(iLow(Symbol(), PERIOD_CURRENT, tempBarShift), DECIMAL_DIGITS);
+      minValue = NormalizeDouble(iLow(Symbol(), PERIOD_CURRENT, tempBarShift), Digits);
       
-
       while(tempTime <= Time[inPrevBar]) {
         tempBarShift = iBarShift(Symbol(),PERIOD_CURRENT, tempTime);
 
         //Search for LOW
-        if(getSymbol == YenPair)
-          tempValue = NormalizeDouble(iLow(Symbol(), PERIOD_CURRENT, tempBarShift), YEN_DECIMAL_DIGITS);
-        else
-          tempValue = NormalizeDouble(iLow(Symbol(), PERIOD_CURRENT, tempBarShift), DECIMAL_DIGITS);
+        tempValue = NormalizeDouble(iLow(Symbol(), PERIOD_CURRENT, tempBarShift), Digits);
 
         if(tempValue < minValue) {
           minValue = tempValue;
@@ -273,8 +253,6 @@ double GetPrevDay(int inPrevBar, PrevDayType inPrevDay){
     }
   }
 }
-
-
 
 
 //Precondition is that this function is a New Trading Day
@@ -337,36 +315,19 @@ bool ComputeNewDay(int barCount) {
 
 
 void UpdateBuffers(int barCount, FullPivotLevelsType& inPivot, double inOP) {
-  if(getSymbol == YenPair) {
-    Ind_OP[barCount]  = NormalizeDouble(inOP, YEN_DECIMAL_DIGITS);
-    Ind_PDH[barCount] = NormalizeDouble(inPivot.PDH, YEN_DECIMAL_DIGITS);
-    Ind_PDL[barCount] = NormalizeDouble(inPivot.PDL, YEN_DECIMAL_DIGITS);
-    Ind_PDC[barCount] = NormalizeDouble(inPivot.PDC, YEN_DECIMAL_DIGITS);
-    
-    //Standard Pivots
-    Ind_PP[barCount] = NormalizeDouble((Ind_PDH[barCount] + Ind_PDL[barCount] + Ind_PDC[barCount]) / 3, YEN_DECIMAL_DIGITS);
-    Ind_R3[barCount] = NormalizeDouble(Ind_PDH[barCount] + (2 * (Ind_PP[barCount] - Ind_PDL[barCount])), YEN_DECIMAL_DIGITS);
-    Ind_R2[barCount] = NormalizeDouble(Ind_PP[barCount] + (Ind_PDH[barCount] - Ind_PDL[barCount]), YEN_DECIMAL_DIGITS);
-    Ind_R1[barCount] = NormalizeDouble((2 * Ind_PP[barCount]) - Ind_PDL[barCount], YEN_DECIMAL_DIGITS);
-    Ind_S1[barCount] = NormalizeDouble((2 * Ind_PP[barCount]) - Ind_PDH[barCount], YEN_DECIMAL_DIGITS);
-    Ind_S2[barCount] = NormalizeDouble(Ind_PP[barCount] - (Ind_PDH[barCount] - Ind_PDL[barCount]), YEN_DECIMAL_DIGITS);
-    Ind_S3[barCount] = NormalizeDouble(Ind_PDL[barCount] - (2 * (Ind_PDH[barCount] - Ind_PP[barCount])), YEN_DECIMAL_DIGITS);  
-  }
-  else {
-    Ind_OP[barCount]  = NormalizeDouble(inOP, DECIMAL_DIGITS);
-    Ind_PDH[barCount] = NormalizeDouble(inPivot.PDH, DECIMAL_DIGITS);
-    Ind_PDL[barCount] = NormalizeDouble(inPivot.PDL, DECIMAL_DIGITS);
-    Ind_PDC[barCount] = NormalizeDouble(inPivot.PDC, DECIMAL_DIGITS);
-    
-    //Standard Pivots
-    Ind_PP[barCount] = NormalizeDouble((Ind_PDH[barCount] + Ind_PDL[barCount] + Ind_PDC[barCount]) / 3, DECIMAL_DIGITS);
-    Ind_R3[barCount] = NormalizeDouble(Ind_PDH[barCount] + (2 * (Ind_PP[barCount] - Ind_PDL[barCount])), DECIMAL_DIGITS);
-    Ind_R2[barCount] = NormalizeDouble(Ind_PP[barCount] + (Ind_PDH[barCount] - Ind_PDL[barCount]), DECIMAL_DIGITS);
-    Ind_R1[barCount] = NormalizeDouble((2 * Ind_PP[barCount]) - Ind_PDL[barCount], DECIMAL_DIGITS);
-    Ind_S1[barCount] = NormalizeDouble((2 * Ind_PP[barCount]) - Ind_PDH[barCount], DECIMAL_DIGITS);
-    Ind_S2[barCount] = NormalizeDouble(Ind_PP[barCount] - (Ind_PDH[barCount] - Ind_PDL[barCount]), DECIMAL_DIGITS);
-    Ind_S3[barCount] = NormalizeDouble(Ind_PDL[barCount] - (2 * (Ind_PDH[barCount] - Ind_PP[barCount])), DECIMAL_DIGITS);  
-  }
+  Ind_OP[barCount]  = NormalizeDouble(inOP, Digits);
+  Ind_PDH[barCount] = NormalizeDouble(inPivot.PDH, Digits);
+  Ind_PDL[barCount] = NormalizeDouble(inPivot.PDL, Digits);
+  Ind_PDC[barCount] = NormalizeDouble(inPivot.PDC, Digits);
+  
+  //Standard Pivots
+  Ind_PP[barCount] = NormalizeDouble((Ind_PDH[barCount] + Ind_PDL[barCount] + Ind_PDC[barCount]) / 3, Digits);
+  Ind_R3[barCount] = NormalizeDouble(Ind_PDH[barCount] + (2 * (Ind_PP[barCount] - Ind_PDL[barCount])), Digits);
+  Ind_R2[barCount] = NormalizeDouble(Ind_PP[barCount] + (Ind_PDH[barCount] - Ind_PDL[barCount]), Digits);
+  Ind_R1[barCount] = NormalizeDouble((2 * Ind_PP[barCount]) - Ind_PDL[barCount], Digits);
+  Ind_S1[barCount] = NormalizeDouble((2 * Ind_PP[barCount]) - Ind_PDH[barCount], Digits);
+  Ind_S2[barCount] = NormalizeDouble(Ind_PP[barCount] - (Ind_PDH[barCount] - Ind_PDL[barCount]), Digits);
+  Ind_S3[barCount] = NormalizeDouble(Ind_PDL[barCount] - (2 * (Ind_PDH[barCount] - Ind_PP[barCount])), Digits);  
 }
 
 void MapIndicatorBuffers() {
