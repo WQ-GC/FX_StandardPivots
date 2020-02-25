@@ -15,8 +15,8 @@
 #property indicator_color11 DodgerBlue
 
 #define MAX_BUFFERS           11
-#define FX_OPEN_HOUR          0
-#define FX_OPEN_MIN           0
+extern int MARKET_OPEN_HOUR   = 0;
+extern int MARKET_OPEN_MIN    = 0;
 
 enum SymbolType{
   MajorPair,
@@ -76,6 +76,12 @@ int OnInit() {
 
   //Check FX pair type
   getSymbol = ValidateSymbol();
+  
+  if(Symbol() == "XAUUSD") {
+    MARKET_OPEN_HOUR = 1;
+    MARKET_OPEN_MIN  = 0;
+    Alert("XAUUSD Opening is 01:00");
+  }
 
   return(INIT_SUCCEEDED);
 }
@@ -148,9 +154,9 @@ int OnCalculate(const int rates_total,
 double GetOpenOP(datetime inTime) {
   MqlDateTime inTimeInfo;
   TimeToStruct(inTime, inTimeInfo);
-  inTimeInfo.hour = FX_OPEN_HOUR;
-  inTimeInfo.min = FX_OPEN_MIN;
-  inTimeInfo.sec = 0;
+  inTimeInfo.hour = MARKET_OPEN_HOUR;
+  inTimeInfo.min  = MARKET_OPEN_MIN;
+  inTimeInfo.sec  = 0;
   inTime = StructToTime(inTimeInfo);
   int OpenBarShift = iBarShift(Symbol(),PERIOD_CURRENT, inTime);
 
@@ -162,8 +168,8 @@ void GetPrevHLC(datetime inCurrTDate, FullPivotLevelsType& outPivotData) {
   datetime openTime = inCurrTDate;
   MqlDateTime openTimeInfo;
   TimeToStruct(openTime, openTimeInfo);
-  openTimeInfo.hour = FX_OPEN_HOUR;
-  openTimeInfo.min  = FX_OPEN_MIN;
+  openTimeInfo.hour = MARKET_OPEN_HOUR;
+  openTimeInfo.min  = MARKET_OPEN_MIN;
   openTimeInfo.sec  = 0;
   openTime = StructToTime(openTimeInfo);
   
@@ -197,8 +203,8 @@ double GetPrevDay(int inPrevBar, PrevDayType inPrevDay){
     datetime prevDayOpenTime = Time[inPrevBar];
     MqlDateTime prevDayOpenTimeInfo;
     TimeToStruct(prevDayOpenTime, prevDayOpenTimeInfo);
-    prevDayOpenTimeInfo.hour = FX_OPEN_HOUR;
-    prevDayOpenTimeInfo.min  = FX_OPEN_MIN;
+    prevDayOpenTimeInfo.hour = MARKET_OPEN_HOUR;
+    prevDayOpenTimeInfo.min  = MARKET_OPEN_MIN;
     prevDayOpenTimeInfo.sec  = 0;
     prevDayOpenTime = StructToTime(prevDayOpenTimeInfo);
     //Print("prevDayOpenTime:  " + TimeToStr(prevDayOpenTime));
@@ -288,8 +294,8 @@ bool ComputeNewDay(int barCount) {
   TimeToStruct(openTDay,  openTDayInfo);
 
   //Assume currCandle is a new day (set to Start of Trading Day)
-  openTDayInfo.hour = FX_OPEN_HOUR;
-  openTDayInfo.min  = FX_OPEN_MIN;
+  openTDayInfo.hour = MARKET_OPEN_HOUR;
+  openTDayInfo.min  = MARKET_OPEN_MIN;
   openTDayInfo.sec  = 0;
 
   openTDay = StructToTime(openTDayInfo);
